@@ -13,7 +13,7 @@ router.get("/", async (req, res) => {
 
 //fetch 1 by id
 router.get("/:id", async (req, res) => {
-	let collection = await MongoDB.collection("records");
+	let collection = await MongoDB.collection("Items");
 	let query = {
 		_id: new ObjectId(req.params.id),
 	};
@@ -29,12 +29,14 @@ router.get("/:id", async (req, res) => {
 //Create
 router.post("/", async (req, res) => {
 	let newDocument = {
-		name: req.body.name,
-		position: req.body.position,
-		level: req.body.level,
+		_id: req.body.ItemId,
+		Name: req.body.ItemName,
+		URL: req.body.ItemURL,
+		Picture: req.body.ItemPicture,
+		Price: req.body.ItemPrice,
 	};
 
-	let collection = await MongoDB.collection("records");
+	let collection = await MongoDB.collection("Items");
 	let result = await collection.insertOne(newDocument);
 	res.send(result).status(204);
 });
@@ -49,7 +51,7 @@ router.patch("/", async (req, res) => {
 			level: req.body.level,
 		},
 	};
-	let collection = await MongoDB.collection("records");
+	let collection = await MongoDB.collection("Items");
 	let result = await collection.updateOne(query, updates);
 
 	res.send(result).status(200);
@@ -58,7 +60,7 @@ router.patch("/", async (req, res) => {
 //Delete record by id
 router.delete("/:d", async (req, res) => {
 	const query = { _id: new ObjectId(req.params.id) };
-	const colleection = db.collection("records");
+	const collection = await MongoDB.collection("Items");
 	let result = await collection.deleteOne(query);
 
 	res.send(result).status(200);
