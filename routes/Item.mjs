@@ -5,9 +5,14 @@ import { v4 as uuid } from "uuid";
 
 const router = express.Router();
 
+function LogRequest(requestType) {
+	let timeStamp = new Date();
+	console.log(`${timeStamp}: [Items] Recieved a ${requestType} request`);
+}
 //fetch all
 router.get("/", async (req, res) => {
-	console.log("received get all");
+	LogRequest("GET (all)");
+
 	let collection = await MongoDB.collection("Items");
 	let results = await collection.find({}).toArray();
 	res.send(results).status(200);
@@ -15,7 +20,8 @@ router.get("/", async (req, res) => {
 
 //fetch 1 by id
 router.get("/:id", async (req, res) => {
-	console.log("received get");
+	LogRequest("GET (single)");
+
 	let collection = await MongoDB.collection("Items");
 	let query = {
 		_id: new ObjectId(req.params._id),
@@ -31,6 +37,8 @@ router.get("/:id", async (req, res) => {
 
 //Create
 router.post("/", async (req, res) => {
+	LogRequest("POST");
+
 	let newDocument = {
 		_id: uuid(),
 		Name: req.body.ItemName,
@@ -46,7 +54,8 @@ router.post("/", async (req, res) => {
 
 //Update by id
 router.patch("/:id", async (req, res) => {
-	console.log("received patch");
+	LogRequest("PATCH");
+
 	const query = { _id: req.params.id };
 	const updates = {
 		$set: {
@@ -65,6 +74,8 @@ router.patch("/:id", async (req, res) => {
 
 //Delete record by id
 router.delete("/:d", async (req, res) => {
+	LogRequest("DELETE");
+
 	const query = { _id: new ObjectId(req.params.id) };
 	const collection = await MongoDB.collection("Items");
 	let result = await collection.deleteOne(query);
