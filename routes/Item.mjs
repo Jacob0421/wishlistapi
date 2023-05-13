@@ -1,11 +1,13 @@
 import express from "express";
 import MongoDB from "../MongoDB/DBconnection.mjs";
 import { ObjectId } from "mongodb";
+import { v4 as uuid } from "uuid";
 
 const router = express.Router();
 
 //fetch all
 router.get("/", async (req, res) => {
+	console.log("received get all");
 	let collection = await MongoDB.collection("Items");
 	let results = await collection.find({}).toArray();
 	res.send(results).status(200);
@@ -13,9 +15,10 @@ router.get("/", async (req, res) => {
 
 //fetch 1 by id
 router.get("/:id", async (req, res) => {
+	console.log("received get");
 	let collection = await MongoDB.collection("Items");
 	let query = {
-		_id: new ObjectId(req.params.id),
+		_id: new ObjectId(req.params._id),
 	};
 	let result = await collection.findOne(query);
 
@@ -29,7 +32,7 @@ router.get("/:id", async (req, res) => {
 //Create
 router.post("/", async (req, res) => {
 	let newDocument = {
-		_id: req.body.ItemId,
+		_id: uuid(),
 		Name: req.body.ItemName,
 		URL: req.body.ItemURL,
 		Picture: req.body.ItemPicture,
@@ -42,15 +45,18 @@ router.post("/", async (req, res) => {
 });
 
 //Update by id
-router.patch("/", async (req, res) => {
-	const query = { _id: new ObjectId(req.params.id) };
+router.patch("/:id", async (req, res) => {
+	console.log("received patch");
+	const query = { _id: req.params.id };
 	const updates = {
 		$set: {
-			name: req.body.name,
-			position: req.body.position,
-			level: req.body.level,
+			Name: req.body.name,
+			URL: req.body.url,
+			Picture: req.body.imgURL,
+			Price: req.body.price,
 		},
 	};
+
 	let collection = await MongoDB.collection("Items");
 	let result = await collection.updateOne(query, updates);
 
