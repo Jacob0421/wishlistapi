@@ -22,10 +22,10 @@ router.get("/", async (req, res) => {
 router.get("/:id", async (req, res) => {
 	LogRequest("GET (single)");
 
+	let query = { _id: req.params.id };
+
 	let collection = await MongoDB.collection("Items");
-	let query = {
-		_id: new ObjectId(req.params._id),
-	};
+
 	let result = await collection.findOne(query);
 
 	if (!result) {
@@ -73,11 +73,12 @@ router.patch("/:id", async (req, res) => {
 });
 
 //Delete record by id
-router.delete("/:d", async (req, res) => {
+router.delete("/:id", async (req, res) => {
 	LogRequest("DELETE");
 
-	const query = { _id: new ObjectId(req.params.id) };
+	const query = { _id: req.params.id };
 	const collection = await MongoDB.collection("Items");
+
 	let result = await collection.deleteOne(query);
 
 	res.send(result).status(200);
