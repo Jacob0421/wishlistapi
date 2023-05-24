@@ -1,7 +1,5 @@
 import express from "express";
 import MongoDB from "../MongoDB/DBconnection.mjs";
-import { ObjectId } from "mongodb";
-import { v4 as uuid } from "uuid";
 const bcrypt = await import("bcrypt");
 const crypto = await import("node:crypto");
 
@@ -12,43 +10,62 @@ function LogRequest(requestType) {
 	console.log(`${timeStamp}: [Login] Recieved a ${requestType} request`);
 }
 
+function findUser(collection, query) {
+	return collection.findOne(query).then((user) => {
+		if (user) {
+			return user;
+		} else {
+			return Promise.reject("User");
+		}
+	});
+}
+
+async function comparePassword(requestPassword, passwordHash) {
+	return bcrypt.compare(requestPassword, passwordHash).then((result) => {
+		if (result) {
+			return true;
+		} else {
+			return Promise.reject("Password");
+		}
+	});
+}
+
 router.post("/", async (req, res) => {
 	LogRequest("Post");
 
 	const { email, password } = req.body;
-
 	const query = { EMailAddress: email };
-	const collection = await MongoDB.collection("Users");
 
-	const user = await collection.findOne(query);
+	const collection = MongoDB.collection("Users");
 
-	if (!user) {
-		console.log("User not Found");
-		return res
-			.send(`User not found for ${email}. Please try again.`)
-			.status(404);
-	} else {
-		let isValidated = await bcrypt.compare(password, user.Password);
+	findUser(collection, query)
+		.then((user) => {
+			return comparePassword(password, user.Password);
+		})
+		.then((result) => {
+			return res.send("Password validation succeeded.").status(201);
+			/*	JWT Expression goes here	*/
+		})
+		.catch((error) => {
+			switch (error) {
+				case "Collection":
+					return res
+						.send(
+							`There was an error retrieving the collection. Please try again.\n${error}`
+						)
+						.status(500);
+					break;
+				case "User":
+				case "Password":
+					return res
+						.send(`Login failed. Please try again.`)
+						.status(401);
+					break;
 
-		if (!isValidated) {
-			return res.send("Password not correct.").status(401);
-		}
-		const updates = {
-			$set: {
-				token: await crypto.randomBytes(48).toString("base64url"),
-			},
-		};
-
-		collection
-			.updateOne(query, updates)
-			.then((result) => {
-				console.log(result);
-				return res.send(result).status(200);
-			})
-			.catch((err) => {
-				return res.send(err).status(501);
-			});
-	}
+				default:
+					return res.send(error);
+			}
+		});
 });
 
 export default router;
