@@ -5,40 +5,16 @@ const crypto = await import("node:crypto");
 
 const router = express.Router();
 
-function LogRequest(requestType) {
-	let timeStamp = new Date();
-	console.log(`${timeStamp}: [Login] Recieved a ${requestType} request`);
-}
-
-function findUser(collection, query) {
-	return collection.findOne(query).then((user) => {
-		if (user) {
-			return user;
-		} else {
-			return Promise.reject("User");
-		}
-	});
-}
-
-async function comparePassword(requestPassword, passwordHash) {
-	return bcrypt.compare(requestPassword, passwordHash).then((result) => {
-		if (result) {
-			return true;
-		} else {
-			return Promise.reject("Password");
-		}
-	});
-}
-
 router.post("/", async (req, res) => {
 	LogRequest("Post");
 
 	const { email, password } = req.body;
 	const query = { EMailAddress: email };
 
-	const collection = MongoDB.collection("Users");
-
-	findUser(collection, query)
+	getCollection("Users")
+		.then((collection) => {
+			return findUser(collection, query);
+		})
 		.then((user) => {
 			return comparePassword(password, user.Password);
 		})
@@ -67,5 +43,40 @@ router.post("/", async (req, res) => {
 			}
 		});
 });
+
+function LogRequest(requestType) {
+	let timeStamp = new Date();
+	console.log(`${timeStamp}: [Login] Recieved a ${requestType} request`);
+}
+
+function getCollection(string) {
+	return MongoDB.collection(string).then((result) => {
+		if (result) {
+			return result;
+		} else {
+			return Promise.reject("Collection");
+		}
+	});
+}
+
+function findUser(collection, query) {
+	return collection.findOne(query).then((user) => {
+		if (user) {
+			return user;
+		} else {
+			return Promise.reject("User");
+		}
+	});
+}
+
+async function comparePassword(requestPassword, passwordHash) {
+	return bcrypt.compare(requestPassword, passwordHash).then((result) => {
+		if (result) {
+			return true;
+		} else {
+			return Promise.reject("Password");
+		}
+	});
+}
 
 export default router;
