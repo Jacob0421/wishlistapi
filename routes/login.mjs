@@ -2,6 +2,7 @@ import express from "express";
 import MongoDB from "../MongoDB/DBconnection.mjs";
 const bcrypt = await import("bcrypt");
 const crypto = await import("node:crypto");
+import jsonwebtoken from "jsonwebtoken";
 
 const router = express.Router();
 
@@ -11,72 +12,34 @@ router.post("/", async (req, res) => {
 	const { email, password } = req.body;
 	const query = { EMailAddress: email };
 
-	getCollection("Users")
-		.then((collection) => {
-			return findUser(collection, query);
-		})
-		.then((user) => {
-			return comparePassword(password, user.Password);
-		})
-		.then((result) => {
-			return res.send("Password validation succeeded.").status(201);
-			/*	JWT Expression goes here	*/
-		})
-		.catch((error) => {
-			switch (error) {
-				case "Collection":
-					return res
-						.send(
-							`There was an error retrieving the collection. Please try again.\n${error}`
-						)
-						.status(500);
-					break;
-				case "User":
-				case "Password":
-					return res
-						.send(`Login failed. Please try again.`)
-						.status(401);
-					break;
+	const collection = MongoDB.collection("Users");
+	const user = await collection.findOne(query);
 
-				default:
-					return res.send(error);
-			}
-		});
+	if (!user) {
+		return res.send(`Login failed. Please try again.`).status(401);
+	}
+
+	if (!(await bcrypt.compare(password, user.Password))) {
+		return res.send(`Login failed. Please try again.`).status(401);
+	}
+
+	const token = jsonwebtoken.sign(
+		{
+			ID: user._id,
+			EMailAddress: user.EMailAddress,
+		},
+		"This_is_my_test_secret_key",
+		{
+			expiresIn: "30d",
+		}
+	);
+
+	return res.send(token).status(200);
 });
 
 function LogRequest(requestType) {
 	let timeStamp = new Date();
 	console.log(`${timeStamp}: [Login] Recieved a ${requestType} request`);
-}
-
-function getCollection(string) {
-	return MongoDB.collection(string).then((result) => {
-		if (result) {
-			return result;
-		} else {
-			return Promise.reject("Collection");
-		}
-	});
-}
-
-function findUser(collection, query) {
-	return collection.findOne(query).then((user) => {
-		if (user) {
-			return user;
-		} else {
-			return Promise.reject("User");
-		}
-	});
-}
-
-async function comparePassword(requestPassword, passwordHash) {
-	return bcrypt.compare(requestPassword, passwordHash).then((result) => {
-		if (result) {
-			return true;
-		} else {
-			return Promise.reject("Password");
-		}
-	});
 }
 
 export default router;
