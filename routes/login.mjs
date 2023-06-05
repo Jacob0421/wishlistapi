@@ -28,13 +28,24 @@ router.post("/", async (req, res) => {
 			ID: user._id,
 			EMailAddress: user.EMailAddress,
 		},
+		// This needs to be changed when app goes live
 		"This_is_my_test_secret_key",
 		{
+			//this needs to be changed to an acceptable limit once go live
 			expiresIn: "30d",
 		}
 	);
 
-	return res.send(token).status(200);
+	return res
+		.cookie("token", token, {
+			httpOnly: false,
+			// Set to true for https webpage
+			// httpOnly: true,
+			secure: true,
+			sameSite: "none",
+		})
+		.status(200)
+		.json({ message: "User successfully logged in" });
 });
 
 function LogRequest(requestType) {

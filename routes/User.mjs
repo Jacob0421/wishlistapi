@@ -4,6 +4,7 @@ import { ObjectId } from "mongodb";
 import { v4 as uuid } from "uuid";
 const bcrypt = await import("bcrypt");
 const crypto = await import("node:crypto");
+import jsonwebtoken from "jsonwebtoken";
 
 const router = express.Router();
 
@@ -87,6 +88,24 @@ router.delete("/:id", async (req, res) => {
 	let result = await collection.deleteOne(query);
 
 	res.send(result).status(200);
+});
+
+router.post("/ValidateUser", (req, res) => {
+	LogRequest("Post (Validate User)");
+	const { token } = req.body;
+
+	const splitToken = token.split(".");
+
+	if (splitToken.length !== 3) {
+		res.send("invalid Token format. Please Sign in again").status(403);
+	}
+
+	const header = splitToken[0];
+	const payload = splitToken[1];
+
+	let payloadDetails = Buffer.from(payload, "base64").toString();
+
+	return res.cookie("token", token, { httpOnly: true }).status(200);
 });
 
 export default router;
