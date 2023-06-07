@@ -14,8 +14,10 @@ router.get("/", async (req, res) => {
 	LogRequest("GET (all)");
 
 	let collection = await MongoDB.collection("Items");
+
 	let results = await collection.find({}).toArray();
-	res.send(results).status(200);
+
+	return res.send(results).status(200);
 });
 
 //fetch 1 by id
@@ -24,32 +26,40 @@ router.get("/:id", async (req, res) => {
 
 	let query = { _id: req.params.id };
 
-	let collection = await MongoDB.collection("Items");
+	let collection = MongoDB.collection("Items");
+	collection.findOne(query).then((item) => {
+		if (!item) {
+			return res.send("item not found").status(404);
+		}
 
-	let result = await collection.findOne(query);
-
-	if (!result) {
-		req.send("Not Found").status(404);
-	} else {
-		res.send(result).status(200);
-	}
+		return res.send(item).status(200);
+	});
 });
 
 //Create
 router.post("/", async (req, res) => {
 	LogRequest("POST");
 
+	const { Name, URL, Picture, Price } = req.body;
+
 	let newDocument = {
 		_id: uuid(),
-		Name: req.body.ItemName,
-		URL: req.body.ItemURL,
-		Picture: req.body.ItemPicture,
-		Price: req.body.ItemPrice,
+		Name: Name,
+		URL: URL,
+		Picture: Picture,
+		Price: Price,
 	};
 
-	let collection = await MongoDB.collection("Items");
-	let result = await collection.insertOne(newDocument);
-	res.send(result).status(204);
+	let collection = MongoDB.collection("Items");
+
+	collection
+		.insertOne(newDocument)
+		.then((insertResult) => {
+			return res.send(insertResult.insertedId).status(200);
+		})
+		.catch((error) => {
+			return res.send(error).status(400);
+		});
 });
 
 //Update by id
@@ -66,7 +76,7 @@ router.patch("/:id", async (req, res) => {
 		},
 	};
 
-	let collection = await MongoDB.collection("Items");
+	let collection = MongoDB.collection("Items");
 	let result = await collection.updateOne(query, updates);
 
 	res.send(result).status(200);
